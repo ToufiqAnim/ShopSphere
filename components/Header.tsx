@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Form from "next/form";
-import { usePathname } from "next/navigation";
+
 import {
   Sheet,
   SheetContent,
@@ -11,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, ShoppingCart, User, Search, X } from "lucide-react";
+import { Menu, ShoppingCart, User, Search, X, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +22,14 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-
+import Form from "next/form";
+import {
+  ClerkLoaded,
+  SignedIn,
+  SignInButton,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
 const categories = [
   {
     name: "Clothing",
@@ -44,13 +50,20 @@ const categories = [
 ];
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const [searchOpen, setSearchOpen] = useState(false);
-
+  const { user } = useUser();
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false); /* 
+  const handleCreatePasskey = async () => {
+    const response = await user?.createPasskey();
+    console.log(response);
+    try {
+    } catch (error) {
+      console.log("Error:", JSON.stringify(error, null, 2));
+    }
+  }; */
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-16 items-center justify-between gap-4">
           {/* Mobile menu and logo */}
           <div className="flex items-center">
             <Sheet>
@@ -92,22 +105,6 @@ export default function Navbar() {
                       )}
                     </div>
                   ))}
-                  <div className="border-t pt-4 mt-4">
-                    <Link
-                      href="/account"
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <User className="h-4 w-4" />
-                      My Account
-                    </Link>
-                    <Link
-                      href="/cart"
-                      className="flex items-center gap-2 text-sm mt-4"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Cart
-                    </Link>
-                  </div>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -172,30 +169,107 @@ export default function Navbar() {
             </NavigationMenu>
           </div>
 
-          {/* Search and account */}
+          {/* Desktop Search */}
+          <div className="hidden md:flex flex-1 max-w-md">
+            <div className="relative w-full">
+              <Form action="/search">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  name="query"
+                  placeholder="Search products..."
+                  className="w-full pl-9"
+                  aria-label="Search products"
+                />
+              </Form>
+            </div>
+          </div>
+
+          {/* Icons */}
           <div className="flex items-center gap-2">
-            <Form
-              className="flex items-center gap-2 max-w-lg mx-auto"
-              action="/search"
-            >
-              <Input
-                type="search"
-                name="query"
-                placeholder="Search products..."
-                className="flex-1 hidden"
-                autoFocus
-                aria-label="Search products"
-              />
-            </Form>
+            {/* Mobile Search Icon & Overlay */}
+            <div className="md:hidden">
+              {mobileSearchOpen ? (
+                <div className="fixed inset-0 top-16 bg-white z-10 px-4 py-4 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Form action="/search">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          name="query"
+                          placeholder="Search products..."
+                          className="w-full pl-9"
+                          autoFocus
+                          aria-label="Search products"
+                        />
+                      </Form>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setMobileSearchOpen(false)}
+                      aria-label="Close search"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileSearchOpen(true)}
+                  aria-label="Open search"
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
 
-            <Link href="/account" className="hidden md:block">
-              <Button variant="ghost" size="icon" aria-label="Account">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
-
+            <ClerkLoaded>
+              <SignedIn>
+                <Button variant="ghost" size="sm">
+                  <Link
+                    href="/orders"
+                    className="flex-1 relative flex justify-center sm:justify-start
+                sm:flex-none items—center space-x-2 bg-blue-500
+                hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    <Package className="h-5 w-5" />
+                    <span>My Orders</span>
+                  </Link>
+                </Button>
+              </SignedIn>
+            </ClerkLoaded>
+            <ClerkLoaded>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <UserButton />
+                  <div className="hidden sm:block text-xs">
+                    <p className="text-gray-400">Welcome Back</p>
+                    <p className="font-bold">{user.fullName}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <SignInButton mode="modal" />
+                  <Button variant="ghost" aria-label="user cart">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </div>
+              )}
+              {/*        {user?.passkeys.length === 0 && (
+                <button
+                  onClick={handleCreatePasskey}
+                  className="bg-white hover:bg-blue-700 hover:text-white text-blue-500  py-2 px-4 rounded border-blue-300 border"
+                >
+                  create a passkey
+                </button>
+              )} */}
+            </ClerkLoaded>
             <Link href="/cart">
-              <Button variant="ghost" size="icon" aria-label="Shopping cart">
+              <Button variant="ghost" aria-label="Shopping cart">
                 <ShoppingCart className="h-5 w-5" />
               </Button>
             </Link>
