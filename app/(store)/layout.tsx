@@ -4,6 +4,7 @@ import "../globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 
 import Navbar from "@/components/Header";
+import { SanityLive } from "@/sanity/lib/live";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         >
           <Navbar />
           <main>{children}</main>
+          <SanityLive />
         </body>
       </html>
     </ClerkProvider>
